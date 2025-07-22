@@ -4,93 +4,191 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Missões: Sthe & Bento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #f0f8ff; color: #333; text-align: center; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h1 { color: #ff69b4; }
-        h2 { color: #1e90ff; }
-        .placar { display: flex; justify-content: space-around; margin: 20px 0; font-size: 1.2em; }
-        .placar div { padding: 10px 20px; border-radius: 10px; color: white; }
-        .sthe { background-color: #ff69b4; }
-        .bento { background-color: #1e90ff; }
-        #task-list { list-style: none; padding: 0; }
-        .task-item { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .task-item.done { text-decoration: line-through; color: #aaa; background: #e0ffe0; }
-        input[type="text"], select, button { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit; }
-        button { background-color: #5cb85c; color: white; cursor: pointer; border: none; }
-        button:hover { opacity: 0.9; }
+        /* Estilos personalizados para um visual lúdico */
+        body {
+            font-family: 'Patrick Hand', cursive;
+            background-color: #FFF9F0; /* Um fundo creme suave */
+        }
+        h1, h2 {
+            font-family: 'Fredoka One', cursive;
+        }
+        .task-item.done {
+            animation: task-done-animation 0.5s ease forwards;
+        }
+        @keyframes task-done-animation {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 9999;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100px) rotateZ(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotateZ(720deg); opacity: 0; }
+        }
     </style>
 </head>
-<body>
+<body class="bg-[#FFF9F0] text-gray-700">
 
-    <div class="container">
-        <h1>🏆 Missões: Sthe & Bento 🏆</h1>
-        <p>Adicione uma nova tarefa e escolha quem vai cumprir a missão!</p>
+    <div id="confetti-container" class="confetti-container"></div>
 
-        <div>
-            <input type="text" id="task-input" placeholder="Qual a nova missão?">
-            <select id="user-select">
-                <option value="Sthe">Sthe</option>
-                <option value="Bento">Bento</option>
-            </select>
-            <button onclick="addTask()">Adicionar Tarefa</button>
-        </div>
+    <div class="container mx-auto max-w-2xl p-4 sm:p-6 md:p-8">
+        <!-- Cabeçalho -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl text-pink-500">Missões: Sthe & Bento</h1>
+            <p class="text-lg mt-2">Transformem tarefas em diversão e conquistas!</p>
+        </header>
 
-        <h2>Placar</h2>
-        <div class="placar">
-            <div class="sthe">
-                Sthe: <span id="sthe-score">0</span> pts (<span id="sthe-percent">0</span>%)
+        <!-- Placar -->
+        <section class="mb-8 p-6 bg-white rounded-2xl shadow-lg">
+            <h2 class="text-2xl text-center mb-4 text-blue-500">🏆 Placar da Disputa 🏆</h2>
+            <div class="flex flex-col sm:flex-row justify-around items-center gap-4">
+                <!-- Placar Sthe -->
+                <div class="text-center p-4 rounded-xl bg-pink-100 w-full sm:w-auto">
+                    <div class="text-2xl font-bold text-pink-600">Sthe</div>
+                    <div class="text-4xl font-bold text-pink-500 my-1" id="sthe-score">0</div>
+                    <div class="text-lg text-pink-700" id="sthe-percent">0%</div>
+                </div>
+                <!-- Placar Bento -->
+                <div class="text-center p-4 rounded-xl bg-blue-100 w-full sm:w-auto">
+                    <div class="text-2xl font-bold text-blue-600">Bento</div>
+                    <div class="text-4xl font-bold text-blue-500 my-1" id="bento-score">0</div>
+                    <div class="text-lg text-blue-700" id="bento-percent">0%</div>
+                </div>
             </div>
-            <div class="bento">
-                Bento: <span id="bento-score">0</span> pts (<span id="bento-percent">0</span>%)
-            </div>
-        </div>
+        </section>
 
-        <h2>Lista de Missões</h2>
-        <ul id="task-list"></ul>
+        <!-- Adicionar Tarefa -->
+        <section class="mb-8 p-6 bg-white rounded-2xl shadow-lg">
+            <h2 class="text-2xl text-center mb-4 text-green-500">Nova Missão!</h2>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="task-input" placeholder="Qual a próxima aventura?" class="flex-grow p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                <select id="user-select" class="p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent transition">
+                    <option value="Sthe">Para Sthe</option>
+                    <option value="Bento">Para Bento</option>
+                </select>
+                <button onclick="addTask()" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105">
+                    Adicionar
+                </button>
+            </div>
+        </section>
+
+        <!-- Lista de Tarefas -->
+        <section>
+            <h2 class="text-2xl text-center mb-4 text-purple-500">Missões Ativas</h2>
+            <ul id="task-list" class="space-y-3">
+                <!-- As tarefas serão inseridas aqui pelo JavaScript -->
+            </ul>
+        </section>
+
     </div>
 
     <script>
-        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        // Tenta carregar as tarefas do armazenamento local do navegador
+        let tasks = JSON.parse(localStorage.getItem('coupleTasks')) || [];
 
+        // Função para renderizar as tarefas na tela
         function renderTasks() {
             const taskList = document.getElementById('task-list');
-            taskList.innerHTML = '';
+            taskList.innerHTML = ''; // Limpa a lista antes de recriar
+
+            if (tasks.length === 0) {
+                taskList.innerHTML = `<li class="text-center text-gray-500 p-4 bg-gray-50 rounded-lg">Uhuul! Nenhuma missão por enquanto. Que tal adicionar uma?</li>`;
+            }
+
             tasks.forEach((task, index) => {
                 const li = document.createElement('li');
-                li.className = `task-item ${task.done ? 'done' : ''}`;
+                const userColor = task.user === 'Sthe' ? 'pink' : 'blue';
+                const doneClass = task.done ? 'done opacity-70' : '';
+                const buttonText = task.done ? 'Desfazer' : 'Missão Cumprida!';
+                const buttonColor = task.done ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-purple-500 hover:bg-purple-600';
+
+                li.className = `task-item flex flex-col sm:flex-row items-center justify-between p-4 bg-white rounded-xl shadow-md transition ${doneClass}`;
+                
                 li.innerHTML = `
-                    <span>${task.text} (${task.user})</span>
-                    <button onclick="toggleDone(${index})">Feito!</button>
+                    <div class="flex-grow mb-2 sm:mb-0 ${task.done ? 'line-through' : ''}">
+                        <span class="font-bold text-${userColor}-500">${task.user}:</span>
+                        <span class="ml-2">${task.text}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleDone(${index})" class="${buttonColor} text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 text-sm">
+                            ${buttonText}
+                        </button>
+                        <button onclick="deleteTask(${index})" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 text-sm">
+                            Excluir
+                        </button>
+                    </div>
                 `;
                 taskList.appendChild(li);
             });
             updateScore();
         }
 
+        // Função para adicionar uma nova tarefa
         function addTask() {
             const taskInput = document.getElementById('task-input');
             const userSelect = document.getElementById('user-select');
             const text = taskInput.value.trim();
-            if (text === '') return;
 
-            tasks.push({ text: text, user: userSelect.value, done: false });
+            if (text === '') {
+                alert('Por favor, escreva qual é a missão!');
+                return;
+            }
+
+            tasks.unshift({ text: text, user: userSelect.value, done: false });
             taskInput.value = '';
             saveAndRender();
         }
 
+        // Função para marcar/desmarcar uma tarefa como feita
         function toggleDone(index) {
             tasks[index].done = !tasks[index].done;
+            // Se a tarefa foi marcada como concluída, mostra a animação de confete
+            if (tasks[index].done) {
+                showConfetti();
+            }
             saveAndRender();
         }
 
+        // Função para excluir uma tarefa
+        function deleteTask(index) {
+            // Confirmação antes de excluir
+            if (confirm('Tem certeza que deseja excluir esta missão?')) {
+                tasks.splice(index, 1);
+                saveAndRender();
+            }
+        }
+
+        // Função para atualizar o placar
         function updateScore() {
             const stheTasksDone = tasks.filter(t => t.user === 'Sthe' && t.done).length;
             const bentoTasksDone = tasks.filter(t => t.user === 'Bento' && t.done).length;
             const totalDone = stheTasksDone + bentoTasksDone;
 
+            // Evita divisão por zero
             const sthePercent = totalDone === 0 ? 0 : Math.round((stheTasksDone / totalDone) * 100);
-            const bentoPercent = totalDone === 0 ? 0 : Math.round((bentoTasksDone / totalDone) * 100);
+            const bentoPercent = totalDone === 0 ? 0 : 100 - sthePercent; // Garante que a soma seja 100%
 
             document.getElementById('sthe-score').innerText = stheTasksDone;
             document.getElementById('bento-score').innerText = bentoTasksDone;
@@ -98,11 +196,39 @@
             document.getElementById('bento-percent').innerText = `${bentoPercent}%`;
         }
         
+        // Função para salvar no localStorage e renderizar novamente
         function saveAndRender() {
-            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('coupleTasks', JSON.stringify(tasks));
             renderTasks();
         }
 
+        // Função para animação de confete
+        function showConfetti() {
+            const container = document.getElementById('confetti-container');
+            const colors = ['#ff69b4', '#1e90ff', '#5cb85c', '#ffa500', '#9370db'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                confetti.style.transform = `scale(${Math.random() * 0.5 + 0.5})`;
+                container.appendChild(confetti);
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+
+        // Adiciona um listener para o Enter no campo de input
+        document.getElementById('task-input').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addTask();
+            }
+        });
+
+        // Renderização inicial ao carregar a página
         renderTasks();
     </script>
 
