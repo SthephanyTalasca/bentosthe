@@ -169,39 +169,44 @@
         const pendingEmptyState = document.getElementById('pending-empty-state');
         const completedEmptyState = document.getElementById('completed-empty-state');
         
-        // Desabilitar o formulário inicialmente para evitar envios prematuros
+        // Desabilitar o formulário inicialmente
         taskInput.disabled = true;
         submitButton.disabled = true;
+        taskInput.placeholder = 'Aguarde, conectando...';
 
-        // --- AUTENTICAÇÃO E ESTADO ---
+        // --- LÓGICA DE CONEXÃO E AUTENTICAÇÃO ---
         let userId = null;
-        let tasksUnsubscribe = null; // Para parar de ouvir quando necessário
-        const tasksCollectionRef = collection(db, `artifacts/${appId}/public/data/tasks`);
+        let tasksUnsubscribe = null;
+
+        // Timeout para o caso de a conexão falhar
+        const connectionTimeout = setTimeout(() => {
+            if (taskInput.disabled) { // Se ainda estiver desativado após 10s
+                taskInput.placeholder = 'Conexão falhou. Recarregue a página.';
+            }
+        }, 10000); // 10 segundos
 
         onAuthStateChanged(auth, async (user) => {
+            clearTimeout(connectionTimeout); // Sucesso! Cancela o timeout.
+
             if (user) {
-                // Usuário está logado
                 userId = user.uid;
                 document.getElementById('user-id-display').textContent = userId;
 
-                // Habilitar o formulário
+                // Habilita o formulário
                 taskInput.disabled = false;
                 submitButton.disabled = false;
                 taskInput.placeholder = 'Qual a nova missão? Ex: Lavar a louça';
                 
-                // Começar a ouvir as tarefas
-                if (tasksUnsubscribe) tasksUnsubscribe(); // Para de ouvir a query anterior se existir
+                if (tasksUnsubscribe) tasksUnsubscribe();
                 listenToTasks();
 
             } else {
-                // Nenhum usuário logado, tentar fazer login
                 try {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
                         await signInAnonymously(auth);
                     }
-                    // onAuthStateChanged será chamado novamente após o login bem-sucedido
                 } catch (error) {
                     console.error("Erro na autenticação:", error);
                     taskInput.placeholder = 'Erro de conexão. Recarregue a página.';
@@ -211,7 +216,6 @@
 
         // --- FUNÇÕES PRINCIPAIS ---
 
-        // 1. Adicionar uma nova tarefa
         taskForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const taskText = taskInput.value.trim();
@@ -227,12 +231,11 @@
                 taskInput.value = '';
             }).catch(error => {
                 console.error("Erro ao adicionar tarefa: ", error);
-                alert('Não foi possível adicionar a missão. Tente novamente.');
             });
         });
 
-        // 2. Ouvir mudanças nas tarefas em tempo real
         function listenToTasks() {
+            const tasksCollectionRef = collection(db, `artifacts/${appId}/public/data/tasks`);
             const q = query(tasksCollectionRef);
             tasksUnsubscribe = onSnapshot(q, (snapshot) => {
                 const tasks = [];
@@ -254,33 +257,20 @@
             });
         }
 
-        // 3. Renderizar as tarefas na tela
         function renderTasks(tasks) {
-            // Remove apenas os cartões de tarefas anteriores, mantendo os elementos de "estado vazio"
             pendingList.querySelectorAll('.task-card').forEach(el => el.remove());
             completedList.querySelectorAll('.task-card').forEach(el => el.remove());
             
             const pendingTasks = tasks.filter(t => t.status === 'pending');
             const completedTasks = tasks.filter(t => t.status === 'completed');
 
-            // Esconde ou mostra o estado vazio e adiciona novas tarefas pendentes
-            if (pendingTasks.length > 0) {
-                pendingEmptyState.classList.add('hidden');
-                pendingTasks.forEach(task => pendingList.appendChild(createTaskElement(task)));
-            } else {
-                pendingEmptyState.classList.remove('hidden');
-            }
-
-            // Esconde ou mostra o estado vazio e adiciona novas tarefas concluídas
-            if (completedTasks.length > 0) {
-                completedEmptyState.classList.add('hidden');
-                completedTasks.forEach(task => completedList.appendChild(createTaskElement(task)));
-            } else {
-                completedEmptyState.classList.remove('hidden');
-            }
+            pendingEmptyState.classList.toggle('hidden', pendingTasks.length > 0);
+            pendingTasks.forEach(task => pendingList.appendChild(createTaskElement(task)));
+            
+            completedEmptyState.classList.toggle('hidden', completedTasks.length > 0);
+            completedTasks.forEach(task => completedList.appendChild(createTaskElement(task)));
         }
 
-        // 4. Criar o elemento HTML para uma tarefa
         function createTaskElement(task) {
             const div = document.createElement('div');
             div.className = 'task-card bg-white p-4 rounded-lg flex flex-col gap-3';
@@ -320,7 +310,6 @@
             return div;
         }
 
-        // 5. Lidar com cliques nos botões das tarefas
         document.getElementById('app').addEventListener('click', (e) => {
             const button = e.target.closest('button');
             if (!button) return;
@@ -329,10 +318,10 @@
             const taskDiv = button.closest('.task-card');
             if (!taskDiv) return;
             const id = taskDiv.dataset.id;
+            const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, id);
 
             if (action === 'complete') {
                 const user = button.dataset.user;
-                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, id);
                 updateDoc(taskRef, {
                     status: 'completed',
                     completedBy: user,
@@ -343,12 +332,10 @@
             }
 
             if (action === 'delete') {
-                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, id);
                 deleteDoc(taskRef);
             }
         });
 
-        // 6. Atualizar o placar
         function updateScoreboard(tasks) {
             const completedTasks = tasks.filter(t => t.status === 'completed');
             const totalCompleted = completedTasks.length;
@@ -360,10 +347,8 @@
             }
 
             const stheCount = completedTasks.filter(t => t.completedBy === 'Sthe').length;
-            const bentoCount = completedTasks.filter(t => t.completedBy === 'Bento').length;
-
             const sthePercentage = Math.round((stheCount / totalCompleted) * 100);
-            const bentoPercentage = 100 - sthePercentage; // Garante que a soma seja sempre 100
+            const bentoPercentage = 100 - sthePercentage;
 
             setScore('sthe', sthePercentage);
             setScore('bento', bentoPercentage);
