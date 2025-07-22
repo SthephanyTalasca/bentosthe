@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missão Casa: Sthe & Bento</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- Canvas Confetti for fun! -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+        }
+        .task-card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .task-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .progress-bar-inner {
+            transition: width 0.5s ease-in-out;
+        }
+        .title-text {
+            font-weight: 900; /* Black weight for titles */
+            color: #1e3a8a; /* Dark blue */
+        }
+        .btn-sthe {
+            background-color: #f472b6; /* Pink */
+            color: white;
+        }
+        .btn-sthe:hover {
+            background-color: #ec4899;
+        }
+        .btn-bento {
+            background-color: #60a5fa; /* Blue */
+            color: white;
+        }
+        .btn-bento:hover {
+            background-color: #3b82f6;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-black title-text">
+                <i class="fa-solid fa-house-chimney-user text-yellow-500"></i>
+                Missão Casa
+            </h1>
+            <p class="text-lg text-gray-500">A aventura de tarefas de Sthe & Bento</p>
+        </header>
+
+        <!-- Scoreboard -->
+        <section id="scoreboard" class="mb-8 p-6 bg-white rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-4 title-text">Placar da Semana</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                <!-- Sthe's Score -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold mb-2 text-pink-500">Sthe <i class="fa-solid fa-star"></i></h3>
+                    <div class="w-full bg-gray-200 rounded-full h-6">
+                        <div id="sthe-progress" class="bg-pink-500 h-6 rounded-full progress-bar-inner flex items-center justify-center text-white font-bold" style="width: 0%;">
+                           <span id="sthe-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bento's Score -->
+                <div class="text-center">
+                    <h3 class="text-xl font-bold mb-2 text-blue-500">Bento <i class="fa-solid fa-trophy"></i></h3>
+                    <div class="w-full bg-gray-200 rounded-full h-6">
+                        <div id="bento-progress" class="bg-blue-500 h-6 rounded-full progress-bar-inner flex items-center justify-center text-white font-bold" style="width: 0%;">
+                            <span id="bento-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Add Task Form -->
+        <section id="add-task-section" class="mb-8 p-6 bg-white rounded-2xl shadow-lg">
+             <h2 class="text-2xl font-bold mb-4 title-text"><i class="fa-solid fa-plus-circle text-green-500"></i> Nova Missão</h2>
+            <form id="task-form" class="flex flex-col sm:flex-row gap-4">
+                <input type="text" id="task-input" placeholder="Aguarde, conectando..." class="flex-grow p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
+                    Adicionar
+                </button>
+            </form>
+        </section>
+
+        <!-- Task Lists -->
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Pending Tasks -->
+            <section id="pending-tasks">
+                <h2 class="text-2xl font-bold mb-4 title-text"><i class="fa-solid fa-list-check text-orange-500"></i> Missões Pendentes</h2>
+                <div id="pending-list" class="space-y-4">
+                    <!-- Tasks will be injected here -->
+                    <div id="pending-empty-state" class="text-center p-8 bg-gray-50 rounded-lg">
+                        <i class="fa-solid fa-couch text-5xl text-green-400 mb-4"></i>
+                        <p class="font-bold">Tudo em ordem!</p>
+                        <p class="text-gray-500">Nenhuma missão pendente. Hora de relaxar!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Completed Tasks -->
+            <section id="completed-tasks">
+                <h2 class="text-2xl font-bold mb-4 title-text"><i class="fa-solid fa-award text-purple-500"></i> Mural da Fama</h2>
+                <div id="completed-list" class="space-y-4">
+                    <!-- Completed tasks will be injected here -->
+                     <div id="completed-empty-state" class="text-center p-8 bg-gray-50 rounded-lg">
+                        <i class="fa-solid fa-person-digging text-5xl text-gray-400 mb-4"></i>
+                        <p class="font-bold">Mural vazio...</p>
+                        <p class="text-gray-500">Conclua uma missão para aparecer aqui!</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <!-- User ID display -->
+        <footer class="text-center mt-8">
+            <p class="text-xs text-gray-400">ID de Sessão: <span id="user-id-display"></span></p>
+        </footer>
+
+    </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CONFIGURAÇÃO ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'missao-casa-default';
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- ELEMENTOS DO DOM ---
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const submitButton = taskForm.querySelector('button[type="submit"]');
+        const pendingList = document.getElementById('pending-list');
+        const completedList = document.getElementById('completed-list');
+        const pendingEmptyState = document.getElementById('pending-empty-state');
+        const completedEmptyState = document.getElementById('completed-empty-state');
+        
+        // Desabilitar o formulário inicialmente para evitar envios prematuros
+        taskInput.disabled = true;
+        submitButton.disabled = true;
+
+        // --- AUTENTICAÇÃO E ESTADO ---
+        let userId = null;
+        let tasksUnsubscribe = null; // Para parar de ouvir quando necessário
+        const tasksCollectionRef = collection(db, `artifacts/${appId}/public/data/tasks`);
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Usuário está logado
+                userId = user.uid;
+                document.getElementById('user-id-display').textContent = userId;
+
+                // Habilitar o formulário
+                taskInput.disabled = false;
+                submitButton.disabled = false;
+                taskInput.placeholder = 'Qual a nova missão? Ex: Lavar a louça';
+                
+                // Começar a ouvir as tarefas
+                if (tasksUnsubscribe) tasksUnsubscribe(); // Para de ouvir a query anterior se existir
+                listenToTasks();
+
+            } else {
+                // Nenhum usuário logado, tentar fazer login
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    // onAuthStateChanged será chamado novamente após o login bem-sucedido
+                } catch (error) {
+                    console.error("Erro na autenticação:", error);
+                    taskInput.placeholder = 'Erro de conexão. Recarregue a página.';
+                }
+            }
+        });
+
+        // --- FUNÇÕES PRINCIPAIS ---
+
+        // 1. Adicionar uma nova tarefa
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const taskText = taskInput.value.trim();
+            if (taskText === '' || submitButton.disabled) return;
+
+            addDoc(tasksCollectionRef, {
+                text: taskText,
+                status: 'pending',
+                createdAt: serverTimestamp(),
+                completedBy: null,
+                completedAt: null,
+            }).then(() => {
+                taskInput.value = '';
+            }).catch(error => {
+                console.error("Erro ao adicionar tarefa: ", error);
+                alert('Não foi possível adicionar a missão. Tente novamente.');
+            });
+        });
+
+        // 2. Ouvir mudanças nas tarefas em tempo real
+        function listenToTasks() {
+            const q = query(tasksCollectionRef);
+            tasksUnsubscribe = onSnapshot(q, (snapshot) => {
+                const tasks = [];
+                snapshot.forEach(doc => {
+                    tasks.push({ id: doc.id, ...doc.data() });
+                });
+                tasks.sort((a, b) => {
+                    if (a.status === 'pending' && b.status === 'completed') return -1;
+                    if (a.status === 'completed' && b.status === 'pending') return 1;
+                    if (a.status === 'pending' && b.status === 'pending') {
+                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+                    }
+                    return (b.completedAt?.seconds || 0) - (a.completedAt?.seconds || 0);
+                });
+                renderTasks(tasks);
+                updateScoreboard(tasks);
+            }, (error) => {
+                console.error("Erro ao ouvir tarefas:", error);
+            });
+        }
+
+        // 3. Renderizar as tarefas na tela
+        function renderTasks(tasks) {
+            pendingList.innerHTML = '';
+            completedList.innerHTML = '';
+            
+            const pendingTasks = tasks.filter(t => t.status === 'pending');
+            const completedTasks = tasks.filter(t => t.status === 'completed');
+
+            if (pendingTasks.length === 0) {
+                pendingList.appendChild(pendingEmptyState);
+                pendingEmptyState.classList.remove('hidden');
+            } else {
+                pendingEmptyState.classList.add('hidden');
+                pendingTasks.forEach(task => pendingList.appendChild(createTaskElement(task)));
+            }
+
+            if (completedTasks.length === 0) {
+                completedList.appendChild(completedEmptyState);
+                completedEmptyState.classList.remove('hidden');
+            } else {
+                completedEmptyState.classList.add('hidden');
+                completedTasks.forEach(task => completedList.appendChild(createTaskElement(task)));
+            }
+        }
+
+        // 4. Criar o elemento HTML para uma tarefa
+        function createTaskElement(task) {
+            const div = document.createElement('div');
+            div.className = 'task-card bg-white p-4 rounded-lg flex flex-col gap-3';
+            div.dataset.id = task.id;
+
+            if (task.status === 'pending') {
+                div.innerHTML = `
+                    <p class="flex-grow text-lg">${task.text}</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button data-action="complete" data-user="Sthe" class="w-full btn-sthe font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                            <i class="fa-solid fa-check"></i> Sthe Concluiu
+                        </button>
+                        <button data-action="complete" data-user="Bento" class="w-full btn-bento font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                            <i class="fa-solid fa-check"></i> Bento Concluiu
+                        </button>
+                    </div>
+                `;
+            } else { // Completed
+                const completedBySthe = task.completedBy === 'Sthe';
+                const bgColor = completedBySthe ? 'bg-pink-100' : 'bg-blue-100';
+                const textColor = completedBySthe ? 'text-pink-600' : 'text-blue-600';
+                const icon = completedBySthe ? 'fa-star' : 'fa-trophy';
+                
+                div.className += ` ${bgColor} opacity-80`;
+                div.innerHTML = `
+                    <p class="flex-grow text-lg text-gray-500 line-through">${task.text}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sm ${textColor}">
+                            <i class="fa-solid ${icon}"></i> Concluído por ${task.completedBy}
+                        </span>
+                        <button data-action="delete" class="text-red-400 hover:text-red-600 transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            return div;
+        }
+
+        // 5. Lidar com cliques nos botões das tarefas
+        document.getElementById('app').addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+
+            const action = button.dataset.action;
+            const taskDiv = button.closest('.task-card');
+            if (!taskDiv) return;
+            const id = taskDiv.dataset.id;
+
+            if (action === 'complete') {
+                const user = button.dataset.user;
+                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, id);
+                updateDoc(taskRef, {
+                    status: 'completed',
+                    completedBy: user,
+                    completedAt: serverTimestamp()
+                }).then(() => {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                });
+            }
+
+            if (action === 'delete') {
+                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, id);
+                deleteDoc(taskRef);
+            }
+        });
+
+        // 6. Atualizar o placar
+        function updateScoreboard(tasks) {
+            const completedTasks = tasks.filter(t => t.status === 'completed');
+            const totalCompleted = completedTasks.length;
+
+            if (totalCompleted === 0) {
+                setScore('sthe', 0);
+                setScore('bento', 0);
+                return;
+            }
+
+            const stheCount = completedTasks.filter(t => t.completedBy === 'Sthe').length;
+            const bentoCount = completedTasks.filter(t => t.completedBy === 'Bento').length;
+
+            const sthePercentage = Math.round((stheCount / totalCompleted) * 100);
+            const bentoPercentage = 100 - sthePercentage; // Garante que a soma seja sempre 100
+
+            setScore('sthe', sthePercentage);
+            setScore('bento', bentoPercentage);
+        }
+        
+        function setScore(user, percentage) {
+            const progressBar = document.getElementById(`${user}-progress`);
+            const percentageText = document.getElementById(`${user}-percentage`);
+            
+            progressBar.style.width = `${percentage}%`;
+            percentageText.textContent = `${percentage}%`;
+        }
+
+    </script>
+</body>
+</html>
