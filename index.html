@@ -3,408 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Missão Casa: Sthe & Bento</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Nunito -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-
-    <!-- Canvas Confetti for fun! -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
+    <title>Missões: Sthe & Bento</title>
     <style>
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: #f0f4f8; /* Light blue-gray background */
-        }
-        .task-card {
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .task-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-        .progress-bar-inner {
-            transition: width 0.5s ease-in-out;
-        }
-        .title-text {
-            font-weight: 900; /* Black weight for titles */
-            color: #1e3a8a; /* Dark blue */
-        }
-        .btn-sthe {
-            background-color: #f472b6; /* Pink */
-            color: white;
-        }
-        .btn-sthe:hover {
-            background-color: #ec4899;
-        }
-        .btn-bento {
-            background-color: #60a5fa; /* Blue */
-            color: white;
-        }
-        .btn-bento:hover {
-            background-color: #3b82f6;
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .spinner {
-            border-top-color: #3498db;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        body { font-family: 'Comic Sans MS', cursive, sans-serif; background-color: #f0f8ff; color: #333; text-align: center; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { color: #ff69b4; }
+        h2 { color: #1e90ff; }
+        .placar { display: flex; justify-content: space-around; margin: 20px 0; font-size: 1.2em; }
+        .placar div { padding: 10px 20px; border-radius: 10px; color: white; }
+        .sthe { background-color: #ff69b4; }
+        .bento { background-color: #1e90ff; }
+        #task-list { list-style: none; padding: 0; }
+        .task-item { background: #f9f9f9; border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .task-item.done { text-decoration: line-through; color: #aaa; background: #e0ffe0; }
+        input[type="text"], select, button { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; font-family: inherit; }
+        button { background-color: #5cb85c; color: white; cursor: pointer; border: none; }
+        button:hover { opacity: 0.9; }
     </style>
 </head>
-<body class="antialiased text-gray-800">
+<body>
 
-    <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
+    <div class="container">
+        <h1>🏆 Missões: Sthe & Bento 🏆</h1>
+        <p>Adicione uma nova tarefa e escolha quem vai cumprir a missão!</p>
 
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-black title-text">
-                <i class="fa-solid fa-house-chimney-user text-yellow-500"></i>
-                Missão Casa
-            </h1>
-            <p class="text-lg text-gray-500">A aventura de tarefas de Sthe & Bento</p>
-        </header>
+        <div>
+            <input type="text" id="task-input" placeholder="Qual a nova missão?">
+            <select id="user-select">
+                <option value="Sthe">Sthe</option>
+                <option value="Bento">Bento</option>
+            </select>
+            <button onclick="addTask()">Adicionar Tarefa</button>
+        </div>
 
-        <!-- Scoreboard -->
-        <section id="scoreboard" class="mb-8 p-6 bg-white rounded-2xl shadow-lg">
-            <h2 class="text-2xl font-bold text-center mb-4 title-text">Placar da Semana</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                <!-- Sthe's Score -->
-                <div class="text-center">
-                    <h3 class="text-xl font-bold mb-2 text-pink-500">Sthe <i class="fa-solid fa-star"></i></h3>
-                    <div class="w-full bg-gray-200 rounded-full h-6">
-                        <div id="sthe-progress" class="bg-pink-500 h-6 rounded-full progress-bar-inner flex items-center justify-center text-white font-bold" style="width: 0%;">
-                           <span id="sthe-percentage">0%</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- Bento's Score -->
-                <div class="text-center">
-                    <h3 class="text-xl font-bold mb-2 text-blue-500">Bento <i class="fa-solid fa-trophy"></i></h3>
-                    <div class="w-full bg-gray-200 rounded-full h-6">
-                        <div id="bento-progress" class="bg-blue-500 h-6 rounded-full progress-bar-inner flex items-center justify-center text-white font-bold" style="width: 0%;">
-                            <span id="bento-percentage">0%</span>
-                        </div>
-                    </div>
-                </div>
+        <h2>Placar</h2>
+        <div class="placar">
+            <div class="sthe">
+                Sthe: <span id="sthe-score">0</span> pts (<span id="sthe-percent">0</span>%)
             </div>
-        </section>
+            <div class="bento">
+                Bento: <span id="bento-score">0</span> pts (<span id="bento-percent">0</span>%)
+            </div>
+        </div>
 
-        <!-- Add Task Form -->
-        <section id="add-task-section" class="mb-8 p-6 bg-white rounded-2xl shadow-lg">
-             <h2 class="text-2xl font-bold mb-4 title-text"><i class="fa-solid fa-plus-circle text-green-500"></i> Nova Missão</h2>
-            <form id="task-form" class="flex flex-col sm:flex-row gap-4">
-                <input type="text" id="task-input" placeholder="Aguarde, conectando..." class="flex-grow p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105">
-                    Adicionar
-                </button>
-            </form>
-        </section>
-
-        <!-- Task Lists -->
-        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Pending Tasks -->
-            <section id="pending-tasks">
-                <h2 class="text-2xl font-bold mb-4 title-text"><i class="fa-solid fa-list-check text-orange-500"></i> Missões Pendentes</h2>
-                <div id="pending-list" class="space-y-4">
-                    <!-- Loading/Error/Empty/Task states will be injected here -->
-                </div>
-            </section>
-
-            <!-- Completed Tasks -->
-            <section id="completed-tasks">
-                <h2 class="text-2xl font-bold mb-4 title-text"><i class="fa-solid fa-award text-purple-500"></i> Mural da Fama</h2>
-                <div id="completed-list" class="space-y-4">
-                    <!-- Loading/Error/Empty/Task states will be injected here -->
-                </div>
-            </section>
-        </main>
-        
-        <!-- User ID display -->
-        <footer class="text-center mt-8">
-            <p class="text-xs text-gray-400">ID de Sessão: <span id="user-id-display"></span></p>
-        </footer>
-
+        <h2>Lista de Missões</h2>
+        <ul id="task-list"></ul>
     </div>
 
-    <!-- Firebase -->
-    <script type="module">
-        // Importações do Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
-        // --- ELEMENTOS DO DOM ---
-        const taskForm = document.getElementById('task-form');
-        const taskInput = document.getElementById('task-input');
-        const submitButton = taskForm.querySelector('button[type="submit"]');
-        const pendingList = document.getElementById('pending-list');
-        const completedList = document.getElementById('completed-list');
-        
-        // --- ESTADOS DA UI ---
-        const loadingStateHTML = `
-            <div class="text-center p-8">
-                <div class="spinner w-12 h-12 rounded-full border-4 border-gray-200 border-t-blue-500 mx-auto"></div>
-                <p class="font-bold mt-4">A carregar missões...</p>
-            </div>`;
-        const errorStateHTML = `
-            <div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
-                <i class="fa-solid fa-circle-exclamation text-5xl mb-4"></i>
-                <p class="font-bold">Ocorreu um erro</p>
-                <p>Não foi possível carregar as missões. Por favor, recarregue a página.</p>
-            </div>`;
-        const pendingEmptyStateHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <i class="fa-solid fa-couch text-5xl text-green-400 mb-4"></i>
-                <p class="font-bold">Tudo em ordem!</p>
-                <p class="text-gray-500">Nenhuma missão pendente. Hora de relaxar!</p>
-            </div>`;
-        const completedEmptyStateHTML = `
-            <div class="text-center p-8 bg-gray-50 rounded-lg">
-                <i class="fa-solid fa-person-digging text-5xl text-gray-400 mb-4"></i>
-                <p class="font-bold">Mural vazio...</p>
-                <p class="text-gray-500">Conclua uma missão para aparecer aqui!</p>
-            </div>`;
-
-        // --- INICIALIZAÇÃO ---
-        
-        // Desabilitar formulário e mostrar estado de carregamento inicial
-        taskInput.disabled = true;
-        submitButton.disabled = true;
-        pendingList.innerHTML = loadingStateHTML;
-        completedList.innerHTML = loadingStateHTML;
-
-        try {
-            // 1. Inicializar Firebase
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'missao-casa-default';
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-            const tasksCollectionRef = collection(db, `artifacts/${appId}/public/data/tasks`);
-
-            // 2. Configurar o listener de autenticação
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    // Utilizador está autenticado
-                    console.log("Utilizador autenticado:", user.uid);
-                    document.getElementById('user-id-display').textContent = user.uid;
-
-                    // Habilitar formulário
-                    taskInput.disabled = false;
-                    submitButton.disabled = false;
-                    taskInput.placeholder = 'Qual a nova missão? Ex: Lavar a louça';
-
-                    // Começar a ouvir as tarefas
-                    listenToTasks(tasksCollectionRef);
-                    setupEventListeners(tasksCollectionRef, db, appId);
-
-                } else {
-                    // Utilizador não está autenticado, tentar login
-                    console.log("Nenhum utilizador. A tentar login...");
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        signInWithCustomToken(auth, __initial_auth_token).catch(e => {
-                            console.error("Falha no login com token, a tentar anónimo:", e);
-                            signInAnonymously(auth).catch(error => {
-                                console.error("Falha no login anónimo após falha do token:", error);
-                                displayError();
-                            });
-                        });
-                    } else {
-                        signInAnonymously(auth).catch(error => {
-                            console.error("Falha no login anónimo:", error);
-                            displayError();
-                        });
-                    }
-                }
-            });
-
-        } catch (error) {
-            console.error("Falha crítica na inicialização do Firebase:", error);
-            displayError();
-        }
-
-        function displayError() {
-            taskInput.placeholder = 'Erro de conexão. Recarregue a página.';
-            pendingList.innerHTML = errorStateHTML;
-            completedList.innerHTML = '';
-            taskInput.disabled = true;
-            submitButton.disabled = true;
-        }
-
-
-        // --- FUNÇÕES AUXILIARES ---
-
-        function listenToTasks(tasksCollectionRef) {
-            const q = query(tasksCollectionRef);
-            onSnapshot(q, (snapshot) => {
-                const tasks = [];
-                snapshot.forEach(doc => {
-                    tasks.push({ id: doc.id, ...doc.data() });
-                });
-                tasks.sort((a, b) => {
-                    if (a.status === 'pending' && b.status === 'completed') return -1;
-                    if (a.status === 'completed' && b.status === 'pending') return 1;
-                    if (a.status === 'pending' && b.status === 'pending') {
-                         return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
-                    }
-                    return (b.completedAt?.seconds || 0) - (a.completedAt?.seconds || 0);
-                });
-                renderTasks(tasks);
-                updateScoreboard(tasks);
-            }, (error) => {
-                console.error("Erro ao ouvir tarefas:", error);
-                displayError();
-            });
-        }
-
-        function renderTasks(tasks) {
-            const pendingTasks = tasks.filter(t => t.status === 'pending');
-            const completedTasks = tasks.filter(t => t.status === 'completed');
-
-            pendingList.innerHTML = '';
-            if (pendingTasks.length === 0) {
-                pendingList.innerHTML = pendingEmptyStateHTML;
-            } else {
-                pendingTasks.forEach(task => pendingList.appendChild(createTaskElement(task)));
-            }
-
-            completedList.innerHTML = '';
-            if (completedTasks.length === 0) {
-                completedList.innerHTML = completedEmptyStateHTML;
-            } else {
-                completedTasks.forEach(task => completedList.appendChild(createTaskElement(task)));
-            }
-        }
-
-        function createTaskElement(task) {
-            const div = document.createElement('div');
-            div.className = 'task-card bg-white p-4 rounded-lg flex flex-col gap-3';
-            div.dataset.id = task.id;
-
-            if (task.status === 'pending') {
-                div.innerHTML = `
-                    <p class="flex-grow text-lg">${task.text}</p>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <button data-action="complete" data-user="Sthe" class="w-full btn-sthe font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            <i class="fa-solid fa-check"></i> Sthe Concluiu
-                        </button>
-                        <button data-action="complete" data-user="Bento" class="w-full btn-bento font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
-                            <i class="fa-solid fa-check"></i> Bento Concluiu
-                        </button>
-                    </div>
+        function renderTasks() {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.className = `task-item ${task.done ? 'done' : ''}`;
+                li.innerHTML = `
+                    <span>${task.text} (${task.user})</span>
+                    <button onclick="toggleDone(${index})">Feito!</button>
                 `;
-            } else {
-                const completedBySthe = task.completedBy === 'Sthe';
-                const bgColor = completedBySthe ? 'bg-pink-100' : 'bg-blue-100';
-                const textColor = completedBySthe ? 'text-pink-600' : 'text-blue-600';
-                const icon = completedBySthe ? 'fa-star' : 'fa-trophy';
-                
-                div.className += ` ${bgColor} opacity-80`;
-                div.innerHTML = `
-                    <p class="flex-grow text-lg text-gray-500 line-through">${task.text}</p>
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold text-sm ${textColor}">
-                            <i class="fa-solid ${icon}"></i> Concluído por ${task.completedBy}
-                        </span>
-                        <button data-action="delete" class="text-red-400 hover:text-red-600 transition">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                `;
-            }
-            return div;
+                taskList.appendChild(li);
+            });
+            updateScore();
+        }
+
+        function addTask() {
+            const taskInput = document.getElementById('task-input');
+            const userSelect = document.getElementById('user-select');
+            const text = taskInput.value.trim();
+            if (text === '') return;
+
+            tasks.push({ text: text, user: userSelect.value, done: false });
+            taskInput.value = '';
+            saveAndRender();
+        }
+
+        function toggleDone(index) {
+            tasks[index].done = !tasks[index].done;
+            saveAndRender();
+        }
+
+        function updateScore() {
+            const stheTasksDone = tasks.filter(t => t.user === 'Sthe' && t.done).length;
+            const bentoTasksDone = tasks.filter(t => t.user === 'Bento' && t.done).length;
+            const totalDone = stheTasksDone + bentoTasksDone;
+
+            const sthePercent = totalDone === 0 ? 0 : Math.round((stheTasksDone / totalDone) * 100);
+            const bentoPercent = totalDone === 0 ? 0 : Math.round((bentoTasksDone / totalDone) * 100);
+
+            document.getElementById('sthe-score').innerText = stheTasksDone;
+            document.getElementById('bento-score').innerText = bentoTasksDone;
+            document.getElementById('sthe-percent').innerText = `${sthePercent}%`;
+            document.getElementById('bento-percent').innerText = `${bentoPercent}%`;
         }
         
-        let listenersAttached = false;
-        function setupEventListeners(tasksCollectionRef, db, appId) {
-            if(listenersAttached) return; // Evita adicionar listeners múltiplos
-            listenersAttached = true;
-
-            taskForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const taskText = taskInput.value.trim();
-                if (taskText === '' || submitButton.disabled) return;
-
-                addDoc(tasksCollectionRef, {
-                    text: taskText,
-                    status: 'pending',
-                    createdAt: serverTimestamp(),
-                    completedBy: null,
-                    completedAt: null,
-                }).then(() => {
-                    taskInput.value = '';
-                }).catch(error => {
-                    console.error("Erro ao adicionar tarefa: ", error);
-                });
-            });
-
-            document.getElementById('app').addEventListener('click', (e) => {
-                const button = e.target.closest('button[data-action]');
-                if (!button) return;
-
-                const taskDiv = button.closest('.task-card');
-                if (!taskDiv) return;
-
-                const id = taskDiv.dataset.id;
-                const action = button.dataset.action;
-                const taskRef = doc(db, `artifacts/${appId}/public/data/tasks`, id);
-
-                if (action === 'complete') {
-                    const user = button.dataset.user;
-                    updateDoc(taskRef, {
-                        status: 'completed',
-                        completedBy: user,
-                        completedAt: serverTimestamp()
-                    }).then(() => {
-                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                    });
-                } else if (action === 'delete') {
-                    deleteDoc(taskRef);
-                }
-            });
+        function saveAndRender() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
         }
 
-        function updateScoreboard(tasks) {
-            const completedTasks = tasks.filter(t => t.status === 'completed');
-            const totalCompleted = completedTasks.length;
-
-            if (totalCompleted === 0) {
-                setScore('sthe', 0);
-                setScore('bento', 0);
-                return;
-            }
-
-            const stheCount = completedTasks.filter(t => t.completedBy === 'Sthe').length;
-            const sthePercentage = Math.round((stheCount / totalCompleted) * 100);
-            const bentoPercentage = 100 - sthePercentage;
-
-            setScore('sthe', sthePercentage);
-            setScore('bento', bentoPercentage);
-        }
-        
-        function setScore(user, percentage) {
-            const progressBar = document.getElementById(`${user}-progress`);
-            const percentageText = document.getElementById(`${user}-percentage`);
-            
-            progressBar.style.width = `${percentage}%`;
-            percentageText.textContent = `${percentage}%`;
-        }
-
+        renderTasks();
     </script>
+
 </body>
 </html>
