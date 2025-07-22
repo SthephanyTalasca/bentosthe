@@ -256,26 +256,27 @@
 
         // 3. Renderizar as tarefas na tela
         function renderTasks(tasks) {
-            pendingList.innerHTML = '';
-            completedList.innerHTML = '';
+            // Remove apenas os cartões de tarefas anteriores, mantendo os elementos de "estado vazio"
+            pendingList.querySelectorAll('.task-card').forEach(el => el.remove());
+            completedList.querySelectorAll('.task-card').forEach(el => el.remove());
             
             const pendingTasks = tasks.filter(t => t.status === 'pending');
             const completedTasks = tasks.filter(t => t.status === 'completed');
 
-            if (pendingTasks.length === 0) {
-                pendingList.appendChild(pendingEmptyState);
-                pendingEmptyState.classList.remove('hidden');
-            } else {
+            // Esconde ou mostra o estado vazio e adiciona novas tarefas pendentes
+            if (pendingTasks.length > 0) {
                 pendingEmptyState.classList.add('hidden');
                 pendingTasks.forEach(task => pendingList.appendChild(createTaskElement(task)));
+            } else {
+                pendingEmptyState.classList.remove('hidden');
             }
 
-            if (completedTasks.length === 0) {
-                completedList.appendChild(completedEmptyState);
-                completedEmptyState.classList.remove('hidden');
-            } else {
+            // Esconde ou mostra o estado vazio e adiciona novas tarefas concluídas
+            if (completedTasks.length > 0) {
                 completedEmptyState.classList.add('hidden');
                 completedTasks.forEach(task => completedList.appendChild(createTaskElement(task)));
+            } else {
+                completedEmptyState.classList.remove('hidden');
             }
         }
 
