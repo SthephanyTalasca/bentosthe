@@ -180,67 +180,76 @@
                 <p class="text-gray-500">Conclua uma missão para aparecer aqui!</p>
             </div>`;
 
-        // --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO ---
-        async function main() {
-            // Desabilitar formulário e mostrar estado de carregamento inicial
+        // --- INICIALIZAÇÃO ---
+        
+        // Desabilitar formulário e mostrar estado de carregamento inicial
+        taskInput.disabled = true;
+        submitButton.disabled = true;
+        pendingList.innerHTML = loadingStateHTML;
+        completedList.innerHTML = loadingStateHTML;
+
+        try {
+            // 1. Inicializar Firebase
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'missao-casa-default';
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const tasksCollectionRef = collection(db, `artifacts/${appId}/public/data/tasks`);
+
+            // 2. Configurar o listener de autenticação
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // Utilizador está autenticado
+                    console.log("Utilizador autenticado:", user.uid);
+                    document.getElementById('user-id-display').textContent = user.uid;
+
+                    // Habilitar formulário
+                    taskInput.disabled = false;
+                    submitButton.disabled = false;
+                    taskInput.placeholder = 'Qual a nova missão? Ex: Lavar a louça';
+
+                    // Começar a ouvir as tarefas
+                    listenToTasks(tasksCollectionRef);
+                    setupEventListeners(tasksCollectionRef, db, appId);
+
+                } else {
+                    // Utilizador não está autenticado, tentar login
+                    console.log("Nenhum utilizador. A tentar login...");
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        signInWithCustomToken(auth, __initial_auth_token).catch(e => {
+                            console.error("Falha no login com token, a tentar anónimo:", e);
+                            signInAnonymously(auth).catch(error => {
+                                console.error("Falha no login anónimo após falha do token:", error);
+                                displayError();
+                            });
+                        });
+                    } else {
+                        signInAnonymously(auth).catch(error => {
+                            console.error("Falha no login anónimo:", error);
+                            displayError();
+                        });
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Falha crítica na inicialização do Firebase:", error);
+            displayError();
+        }
+
+        function displayError() {
+            taskInput.placeholder = 'Erro de conexão. Recarregue a página.';
+            pendingList.innerHTML = errorStateHTML;
+            completedList.innerHTML = '';
             taskInput.disabled = true;
             submitButton.disabled = true;
-            pendingList.innerHTML = loadingStateHTML;
-            completedList.innerHTML = loadingStateHTML;
-
-            try {
-                // 1. Inicializar Firebase
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'missao-casa-default';
-                const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
-                const db = getFirestore(app);
-
-                // 2. Autenticar utilizador
-                await new Promise((resolve, reject) => {
-                    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-                        unsubscribe(); // Só precisamos disto uma vez para a verificação inicial
-                        if (user) {
-                            resolve(user);
-                        } else {
-                            try {
-                                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                    await signInWithCustomToken(auth, __initial_auth_token);
-                                } else {
-                                    await signInAnonymously(auth);
-                                }
-                                // A promise resolverá na próxima chamada do onAuthStateChanged
-                                resolve(auth.currentUser);
-                            } catch (e) {
-                                reject(e);
-                            }
-                        }
-                    });
-                });
-
-                document.getElementById('user-id-display').textContent = auth.currentUser.uid;
-
-                // 3. Habilitar formulário
-                taskInput.disabled = false;
-                submitButton.disabled = false;
-                taskInput.placeholder = 'Qual a nova missão? Ex: Lavar a louça';
-
-                // 4. Ouvir tarefas e configurar eventos
-                const tasksCollectionRef = collection(db, `artifacts/${appId}/public/data/tasks`);
-                listenToTasks(tasksCollectionRef, db, appId);
-                setupEventListeners(tasksCollectionRef, db, appId);
-
-            } catch (error) {
-                console.error("Falha crítica na inicialização:", error);
-                taskInput.placeholder = 'Erro de conexão. Recarregue a página.';
-                pendingList.innerHTML = errorStateHTML;
-                completedList.innerHTML = '';
-            }
         }
+
 
         // --- FUNÇÕES AUXILIARES ---
 
-        function listenToTasks(tasksCollectionRef, db, appId) {
+        function listenToTasks(tasksCollectionRef) {
             const q = query(tasksCollectionRef);
             onSnapshot(q, (snapshot) => {
                 const tasks = [];
@@ -259,8 +268,7 @@
                 updateScoreboard(tasks);
             }, (error) => {
                 console.error("Erro ao ouvir tarefas:", error);
-                pendingList.innerHTML = errorStateHTML;
-                completedList.innerHTML = '';
+                displayError();
             });
         }
 
@@ -322,7 +330,11 @@
             return div;
         }
         
+        let listenersAttached = false;
         function setupEventListeners(tasksCollectionRef, db, appId) {
+            if(listenersAttached) return; // Evita adicionar listeners múltiplos
+            listenersAttached = true;
+
             taskForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const taskText = taskInput.value.trim();
@@ -338,15 +350,6 @@
                     taskInput.value = '';
                 }).catch(error => {
                     console.error("Erro ao adicionar tarefa: ", error);
-                    const originalText = submitButton.textContent;
-                    submitButton.textContent = 'Erro!';
-                    submitButton.classList.add('bg-red-500', 'hover:bg-red-600');
-                    submitButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    setTimeout(() => {
-                        submitButton.textContent = originalText;
-                        submitButton.classList.remove('bg-red-500', 'hover:bg-red-600');
-                        submitButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                    }, 3000);
                 });
             });
 
@@ -401,9 +404,6 @@
             progressBar.style.width = `${percentage}%`;
             percentageText.textContent = `${percentage}%`;
         }
-
-        // Iniciar a aplicação
-        main();
 
     </script>
 </body>
